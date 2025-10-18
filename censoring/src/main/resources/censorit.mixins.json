@@ -1,0 +1,17 @@
+{
+	"required": true,
+	"package": "top.blackmare.bloodred.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"ServerPlayNetworkHandlerMixin",
+		"AnvilMenuMixin",
+		"SignBlockEntityMixin",
+		"ServerGamePacketListenerImplMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}
