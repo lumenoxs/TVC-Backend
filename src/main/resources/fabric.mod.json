@@ -1,34 +1,21 @@
 {
 	"schemaVersion": 1,
-	"id": "modid",
+	"id": "tvc-backend",
 	"version": "${version}",
-	"name": "Example mod",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"name": "TVC-Backend",
+	"description": "Backend fabric mod for the True Vanilla Community server",
 	"authors": [
-		"Me!"
+		"RPiCPU"
 	],
-	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
-	},
-	"license": "CC0-1.0",
-	"icon": "assets/modid/icon.png",
-	"environment": "*",
+	"license": "ARR",
+	"icon": "assets/censorit/icon.png",
+	"environment": "server",
 	"entrypoints": {
 		"main": [
-			"com.example.ExampleMod"
-		],
-		"client": [
-			"com.example.ExampleModClient"
+			"net.tvc.backend.BackendInstance"
 		]
 	},
-	"mixins": [
-		"modid.mixins.json",
-		{
-			"config": "modid.client.mixins.json",
-			"environment": "client"
-		}
-	],
+	"mixins": [],
 	"depends": {
 		"fabricloader": ">=0.17.2",
 		"minecraft": "~1.21.10",
