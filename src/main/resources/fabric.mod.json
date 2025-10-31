@@ -8,7 +8,7 @@
 		"RPiCPU"
 	],
 	"license": "ARR",
-	"icon": "assets/censorit/icon.png",
+	"icon": "assets/tvc-backend/icon.png",
 	"environment": "server",
 	"entrypoints": {
 		"main": [

@@ -28,10 +28,8 @@ dependencies {
 	mappings loom.officialMojangMappings()
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	// Fabric API
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	
-	// HOCON configuration library
 	implementation "com.typesafe:config:1.4.3"
 }
 
@@ -63,10 +61,8 @@ jar {
 }
 
 
-// Custom task to rename the final jar
 task renameJar {
 	doLast {
-		// Rename the main jar
 		def originalJar = file("build/libs/${project.archives_base_name}-${project.mod_version}.jar")
 		def newJar = file("build/libs/CensorIt-${project.mod_version}+${project.minecraft_version}.jar")
 		
@@ -75,7 +71,6 @@ task renameJar {
 			println "Renamed jar to: ${newJar.name}"
 		}
 		
-		// Also rename the sources jar if it exists
 		def originalSourcesJar = file("build/libs/${project.archives_base_name}-${project.mod_version}-sources.jar")
 		def newSourcesJar = file("build/libs/CensorIt-${project.mod_version}+${project.minecraft_version}-sources.jar")
 		
@@ -86,10 +81,8 @@ task renameJar {
 	}
 }
 
-// Make the rename task run after build tasks
 build.finalizedBy renameJar
 
-// configure the maven publication
 publishing {
 	publications {
 		create("mavenJava", MavenPublication) {
@@ -98,11 +91,5 @@ publishing {
 		}
 	}
 
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
-	}
+	repositories {}
 }

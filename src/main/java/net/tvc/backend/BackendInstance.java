@@ -1,5 +1,7 @@
 package net.tvc.backend;
 
+import net.tvc.backend.managers.CallbackManager;
+
 import net.fabricmc.api.ModInitializer;
 
 import org.slf4j.Logger;
@@ -13,6 +15,6 @@ public class BackendInstance implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		LOGGER.info("Hello Fabric world!");
-		
+		CallbackManager.registerCallbacks();
 	}
 }
