@@ -4,7 +4,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 import net.minecraft.world.Container;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
@@ -19,6 +18,19 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 
 public class CheckingLogic {
+    public static void checkItems(Container container, ServerPlayer player, BlockPos pos) {
+        for (int i = 0; i < container.getContainerSize(); i++) {
+            ItemStack iStack = container.getItem(i);
+            if (!iStack.isEmpty()) {
+                if (checkItem(iStack)) {
+                    ReportingLogic.sendStorageWebhook(player, iStack, pos);
+                    container.removeItem(i, iStack.getCount());
+                    container.setChanged();
+                }
+            }
+        }
+    }
+
     public static boolean checkItem(ItemStack iStack) {
         boolean illegal = false;
 
@@ -31,7 +43,7 @@ public class CheckingLogic {
 
         for (Holder<Enchantment> enchantment : iEnchantments.keySet()) {
             int level = iEnchantments.getLevel(enchantment);
-            if (level > enchantment.value().getMaxLevel()) {
+            if (level > enchantment.value().getMaxLevel() || level < enchantment.value().getMinLevel() || enchantment.value().isSupportedItem(iStack) == false) {
                 illegal = true;
                 return illegal;
             }
@@ -66,16 +78,7 @@ public class CheckingLogic {
                             continue;
                         }
                         
-                        for (int i = 0; i < bEntity.getContainerSize(); i++) {
-                            ItemStack iStack = bEntity.getItem(i);
-                            if (!iStack.isEmpty()) {
-                                if (checkItem(iStack)) {
-                                    ReportingLogic.sendStorageWebhook(player, iStack, pos);
-                                    bEntity.removeItem(i, iStack.getCount());
-                                    bEntity.setChanged();
-                                }
-                            }
-                        }
+                        checkItems(bEntity, player, pos);
                     }
                 }
             }
@@ -83,17 +86,6 @@ public class CheckingLogic {
     }
 
     public static void checkPlayer(ServerPlayer player) {
-        Inventory inventory = player.getInventory();
-
-        for (int i = 0; i < inventory.getContainerSize(); i++) {
-            ItemStack iStack = inventory.getItem(i);
-             if (!iStack.isEmpty()) {
-                if (checkItem(iStack)) {
-                    ReportingLogic.sendInventoryWebhook(player, iStack);
-                    inventory.removeItem(i, iStack.getCount());
-                    inventory.setChanged();
-                }
-            }
-        }
+        checkItems(player.getInventory(), player, null);
     }
 }

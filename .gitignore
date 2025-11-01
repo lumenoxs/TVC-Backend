@@ -39,7 +39,8 @@ replay_*.log
 *.hprof
 *.jfr
 
-
 .github/
 
 src/main/java/net/tvc/backend/logic/ReportingLogic.java
+
+gradle/

@@ -1,8 +1,15 @@
 package net.tvc.backend.utils;
 
 import javax.net.ssl.HttpsURLConnection;
+
+import net.tvc.backend.BackendInstance;
+
 import java.awt.Color;
 import java.io.OutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
+import java.nio.charset.StandardCharsets;
 import java.lang.reflect.Array;
 import java.net.URI;
 import java.net.URL;
@@ -143,19 +150,50 @@ public class DiscordWebhook {
 
             URL url = URI.create(this.url).toURL();
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
-            connection.addRequestProperty("Content-Type", "application/json");
-            connection.addRequestProperty("User-Agent", "TVC-Backend-Webhook-Client");
+            // Use setRequestProperty and include charset to ensure proper encoding
+            connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            connection.setRequestProperty("User-Agent", "TVC-Backend-Webhook-Client");
             connection.setDoOutput(true);
             connection.setRequestMethod("POST");
 
+            byte[] payload = json.toString().getBytes(StandardCharsets.UTF_8);
+
             try (OutputStream stream = connection.getOutputStream()) {
-                stream.write(json.toString().getBytes());
+                stream.write(payload);
                 stream.flush();
+            } catch (Exception e) {
+                BackendInstance.LOGGER.error("Failed to write Discord webhook output stream", e);
             }
 
-            connection.getInputStream().close(); // I'm not sure why but it doesn't work without getting the InputStream
+            int responseCode = connection.getResponseCode();
+            if (responseCode >= 400) {
+                // Read and log the error body from Discord for easier debugging
+                try (InputStream err = connection.getErrorStream()) {
+                    if (err != null) {
+                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(err, StandardCharsets.UTF_8))) {
+                            StringBuilder sb = new StringBuilder();
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                sb.append(line).append('\n');
+                            }
+                            BackendInstance.LOGGER.error("Discord webhook returned HTTP {}: {}", responseCode, sb.toString().trim());
+                        }
+                    } else {
+                        BackendInstance.LOGGER.error("Discord webhook returned HTTP {} with empty error stream", responseCode);
+                    }
+                }
+            } else {
+                // consume the successful response stream if present
+                try (InputStream in = connection.getInputStream()) {
+                    if (in != null) in.close();
+                } catch (Exception ignored) {
+                }
+            }
+
             connection.disconnect();
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            BackendInstance.LOGGER.error("Failed to send Discord webhook", e);
+        }
     }
 
     public static class EmbedObject {
