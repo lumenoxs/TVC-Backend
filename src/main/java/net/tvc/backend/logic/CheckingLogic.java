@@ -23,7 +23,11 @@ public class CheckingLogic {
             ItemStack iStack = container.getItem(i);
             if (!iStack.isEmpty()) {
                 if (checkItem(iStack)) {
-                    ReportingLogic.sendStorageWebhook(player, iStack, pos);
+                    if (pos == null)
+                        ReportingLogic.sendInventoryWebhook(player, iStack);
+                    else {
+                        ReportingLogic.sendStorageWebhook(player, iStack, pos);
+                    }
                     container.removeItem(i, iStack.getCount());
                     container.setChanged();
                 }
