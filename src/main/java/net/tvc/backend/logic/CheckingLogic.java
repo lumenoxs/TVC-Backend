@@ -60,9 +60,9 @@ public class CheckingLogic {
         BlockPos pPos = player.getOnPos();
         ServerLevel world = player.level();
 
-        for (int x = -15; x <= 15; x++) {
-            for (int y = -15; y <= 15; y++) {
-                for (int z = -15; z <= 15; z++) {
+        for (int x = -4; x <= 4; x++) {
+            for (int y = -3; y <= 3; y++) {
+                for (int z = -4; z <= 4; z++) {
                     BlockPos pos = new BlockPos(x+pPos.getX(), y+pPos.getY(), z+pPos.getZ());
                     BlockState blockState = world.getBlockState(pos);
                     if (blockState.getBlock() == Blocks.CHEST ||

@@ -1,17 +1,10 @@
 package net.tvc.backend.utils;
 
 import javax.net.ssl.HttpsURLConnection;
-
-import net.tvc.backend.BackendInstance;
-
 import java.awt.Color;
+import java.io.IOException;
 import java.io.OutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.BufferedReader;
-import java.nio.charset.StandardCharsets;
 import java.lang.reflect.Array;
-import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,7 +14,6 @@ import java.util.Set;
 
 /**
  * Class used to execute Discord Webhooks with low effort
- * Come from: https://gist.github.com/k3kdude/fba6f6b37594eae3d6f9475330733bdb
  */
 public class DiscordWebhook {
 
@@ -61,139 +53,107 @@ public class DiscordWebhook {
         this.embeds.add(embed);
     }
 
-    public void execute() {
+    public void execute() throws IOException {
         if (this.content == null && this.embeds.isEmpty()) {
             throw new IllegalArgumentException("Set content or add at least one EmbedObject");
         }
 
-        try {
-            JSONObject json = new JSONObject();
+        JSONObject json = new JSONObject();
 
-            json.put("content", this.content);
-            json.put("username", this.username);
-            json.put("avatar_url", this.avatarUrl);
-            json.put("tts", this.tts);
+        json.put("content", this.content);
+        json.put("username", this.username);
+        json.put("avatar_url", this.avatarUrl);
+        json.put("tts", this.tts);
 
-            if (!this.embeds.isEmpty()) {
-                List<JSONObject> embedObjects = new ArrayList<>();
+        if (!this.embeds.isEmpty()) {
+            List<JSONObject> embedObjects = new ArrayList<>();
 
-                for (EmbedObject embed : this.embeds) {
-                    JSONObject jsonEmbed = new JSONObject();
+            for (EmbedObject embed : this.embeds) {
+                JSONObject jsonEmbed = new JSONObject();
 
-                    jsonEmbed.put("title", embed.getTitle());
-                    jsonEmbed.put("description", embed.getDescription());
-                    jsonEmbed.put("url", embed.getUrl());
+                jsonEmbed.put("title", embed.getTitle());
+                jsonEmbed.put("description", embed.getDescription());
+                jsonEmbed.put("url", embed.getUrl());
 
-                    if (embed.getColor() != null) {
-                        Color color = embed.getColor();
-                        int rgb = color.getRed();
-                        rgb = (rgb << 8) + color.getGreen();
-                        rgb = (rgb << 8) + color.getBlue();
+                if (embed.getColor() != null) {
+                    Color color = embed.getColor();
+                    int rgb = color.getRed();
+                    rgb = (rgb << 8) + color.getGreen();
+                    rgb = (rgb << 8) + color.getBlue();
 
-                        jsonEmbed.put("color", rgb);
-                    }
-
-                    EmbedObject.Footer footer = embed.getFooter();
-                    EmbedObject.Image image = embed.getImage();
-                    EmbedObject.Thumbnail thumbnail = embed.getThumbnail();
-                    EmbedObject.Author author = embed.getAuthor();
-                    List<EmbedObject.Field> fields = embed.getFields();
-
-                    if (footer != null) {
-                        JSONObject jsonFooter = new JSONObject();
-
-                        jsonFooter.put("text", footer.getText());
-                        jsonFooter.put("icon_url", footer.getIconUrl());
-                        jsonEmbed.put("footer", jsonFooter);
-                    }
-
-                    if (image != null) {
-                        JSONObject jsonImage = new JSONObject();
-
-                        jsonImage.put("url", image.getUrl());
-                        jsonEmbed.put("image", jsonImage);
-                    }
-
-                    if (thumbnail != null) {
-                        JSONObject jsonThumbnail = new JSONObject();
-
-                        jsonThumbnail.put("url", thumbnail.getUrl());
-                        jsonEmbed.put("thumbnail", jsonThumbnail);
-                    }
-
-                    if (author != null) {
-                        JSONObject jsonAuthor = new JSONObject();
-
-                        jsonAuthor.put("name", author.getName());
-                        jsonAuthor.put("url", author.getUrl());
-                        jsonAuthor.put("icon_url", author.getIconUrl());
-                        jsonEmbed.put("author", jsonAuthor);
-                    }
-
-                    List<JSONObject> jsonFields = new ArrayList<>();
-                    for (EmbedObject.Field field : fields) {
-                        JSONObject jsonField = new JSONObject();
-
-                        jsonField.put("name", field.getName());
-                        jsonField.put("value", field.getValue());
-                        jsonField.put("inline", field.isInline());
-
-                        jsonFields.add(jsonField);
-                    }
-
-                    jsonEmbed.put("fields", jsonFields.toArray());
-                    embedObjects.add(jsonEmbed);
+                    jsonEmbed.put("color", rgb);
                 }
 
-                json.put("embeds", embedObjects.toArray());
-            }
+                EmbedObject.Footer footer = embed.getFooter();
+                EmbedObject.Image image = embed.getImage();
+                EmbedObject.Thumbnail thumbnail = embed.getThumbnail();
+                EmbedObject.Author author = embed.getAuthor();
+                List<EmbedObject.Field> fields = embed.getFields();
 
-            URL url = URI.create(this.url).toURL();
-            HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
-            // Use setRequestProperty and include charset to ensure proper encoding
-            connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            connection.setRequestProperty("User-Agent", "TVC-Backend-Webhook-Client");
-            connection.setDoOutput(true);
-            connection.setRequestMethod("POST");
+                if (footer != null) {
+                    JSONObject jsonFooter = new JSONObject();
 
-            byte[] payload = json.toString().getBytes(StandardCharsets.UTF_8);
-
-            try (OutputStream stream = connection.getOutputStream()) {
-                stream.write(payload);
-                stream.flush();
-            } catch (Exception e) {
-                BackendInstance.LOGGER.error("Failed to write Discord webhook output stream", e);
-            }
-
-            int responseCode = connection.getResponseCode();
-            if (responseCode >= 400) {
-                // Read and log the error body from Discord for easier debugging
-                try (InputStream err = connection.getErrorStream()) {
-                    if (err != null) {
-                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(err, StandardCharsets.UTF_8))) {
-                            StringBuilder sb = new StringBuilder();
-                            String line;
-                            while ((line = reader.readLine()) != null) {
-                                sb.append(line).append('\n');
-                            }
-                            BackendInstance.LOGGER.error("Discord webhook returned HTTP {}: {}", responseCode, sb.toString().trim());
-                        }
-                    } else {
-                        BackendInstance.LOGGER.error("Discord webhook returned HTTP {} with empty error stream", responseCode);
-                    }
+                    jsonFooter.put("text", footer.getText());
+                    jsonFooter.put("icon_url", footer.getIconUrl());
+                    jsonEmbed.put("footer", jsonFooter);
                 }
-            } else {
-                // consume the successful response stream if present
-                try (InputStream in = connection.getInputStream()) {
-                    if (in != null) in.close();
-                } catch (Exception ignored) {
+
+                if (image != null) {
+                    JSONObject jsonImage = new JSONObject();
+
+                    jsonImage.put("url", image.getUrl());
+                    jsonEmbed.put("image", jsonImage);
                 }
+
+                if (thumbnail != null) {
+                    JSONObject jsonThumbnail = new JSONObject();
+
+                    jsonThumbnail.put("url", thumbnail.getUrl());
+                    jsonEmbed.put("thumbnail", jsonThumbnail);
+                }
+
+                if (author != null) {
+                    JSONObject jsonAuthor = new JSONObject();
+
+                    jsonAuthor.put("name", author.getName());
+                    jsonAuthor.put("url", author.getUrl());
+                    jsonAuthor.put("icon_url", author.getIconUrl());
+                    jsonEmbed.put("author", jsonAuthor);
+                }
+
+                List<JSONObject> jsonFields = new ArrayList<>();
+                for (EmbedObject.Field field : fields) {
+                    JSONObject jsonField = new JSONObject();
+
+                    jsonField.put("name", field.getName());
+                    jsonField.put("value", field.getValue());
+                    jsonField.put("inline", field.isInline());
+
+                    jsonFields.add(jsonField);
+                }
+
+                jsonEmbed.put("fields", jsonFields.toArray());
+                embedObjects.add(jsonEmbed);
             }
 
-            connection.disconnect();
-        } catch (Exception e) {
-            BackendInstance.LOGGER.error("Failed to send Discord webhook", e);
+            json.put("embeds", embedObjects.toArray());
         }
+
+        @SuppressWarnings("deprecation")
+        URL url = new URL(this.url);
+        HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+        connection.addRequestProperty("Content-Type", "application/json");
+        connection.addRequestProperty("User-Agent", "Java-DiscordWebhook-BY-Gelox_");
+        connection.setDoOutput(true);
+        connection.setRequestMethod("POST");
+
+        OutputStream stream = connection.getOutputStream();
+        stream.write(json.toString().getBytes());
+        stream.flush();
+        stream.close();
+
+        connection.getInputStream().close(); //I'm not sure why but it doesn't work without getting the InputStream
+        connection.disconnect();
     }
 
     public static class EmbedObject {
@@ -428,4 +388,5 @@ public class DiscordWebhook {
             return "\"" + string + "\"";
         }
     }
+
 }
